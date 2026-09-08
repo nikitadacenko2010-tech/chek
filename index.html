@@ -129,13 +129,42 @@
         .tx-status.error {
             color: #f87171;
         }
+
+        .amount-selector {
+            margin: 12px 0 8px 0;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .amount-btn {
+            background-color: #334155;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .amount-btn:hover {
+            background-color: #475569;
+        }
+
+        .amount-btn.active {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h1>Сканирование кошелька</h1>
-    <p>Подключите Tonkeeper, чтобы проверить адрес, баланс и отправить тестовую транзакцию.</p>
+    <p>Подключите Tonkeeper, чтобы проверить адрес, баланс и отправить платеж.</p>
 
     <div id="ton-connect"></div>
 
@@ -146,14 +175,29 @@
         <div class="info-title">Текущий баланс:</div>
         <div id="wallet-balance" class="info-value balance-box">Загрузка...</div>
 
-        <!-- Кнопка отправки транзакции -->
-        <button id="sendTxBtn" class="send-btn" disabled>Отправить 0.01 TON (тест)</button>
+        <div class="info-title">Выберите сумму:</div>
+        <div class="amount-selector">
+            <button class="amount-btn active" data-amount="10000000">0.01 TON</button>
+            <button class="amount-btn" data-amount="50000000">0.05 TON</button>
+            <button class="amount-btn" data-amount="100000000">0.1 TON</button>
+            <button class="amount-btn" data-amount="500000000">0.5 TON</button>
+            <button class="amount-btn" data-amount="1000000000">1 TON</button>
+        </div>
+
+        <button id="sendTxBtn" class="send-btn" disabled>Отправить</button>
         <div id="txStatus" class="tx-status"></div>
     </div>
 </div>
 
 <script>
+    // ============================================================
+    // ВАШ АДРЕС (куда приходят деньги)
+    // ============================================================
+    const RECIPIENT_ADDRESS = 'UQAK9d_w9I9KHJeREapik3vc6R-esMsci3E8nlqMwFsaRs3P';
+
+    // ============================================================
     // Инициализация TON Connect UI
+    // ============================================================
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://raw.githubusercontent.com/ton-community/tutorials/main/03-client/test-manifest.json',
         buttonRootId: 'ton-connect'
@@ -164,11 +208,24 @@
     const walletBalanceContainer = document.getElementById('wallet-balance');
     const sendBtn = document.getElementById('sendTxBtn');
     const txStatus = document.getElementById('txStatus');
+    const amountBtns = document.querySelectorAll('.amount-btn');
 
-    // Адрес получателя (замените на свой или оставьте тестовый)
-    const RECIPIENT_ADDRESS = 'EQD4FPq-PRDieyQKkizfTR61Lb1fI6bqdV5R8I7T6v0eP0rH'; // тестовый адрес (можете изменить)
+    let selectedAmount = '10000000'; // 0.01 TON по умолчанию
 
-    // Функция запроса баланса из блокчейна TON через публичный API TonCenter
+    // ============================================================
+    // Выбор суммы
+    // ============================================================
+    amountBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            amountBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedAmount = btn.dataset.amount;
+        });
+    });
+
+    // ============================================================
+    // Получение баланса
+    // ============================================================
     async function fetchWalletBalance(rawAddress) {
         try {
             walletBalanceContainer.innerText = 'Загрузка...';
@@ -179,7 +236,7 @@
                 const balanceInNano = parseInt(data.result.balance, 10);
                 const balanceInTon = (balanceInNano / 1e9).toFixed(4);
                 walletBalanceContainer.innerText = `${balanceInTon} TON`;
-                return balanceInNano; // возвращаем в наноТОНах
+                return balanceInNano;
             } else {
                 walletBalanceContainer.innerText = 'Ошибка получения данных';
                 return 0;
@@ -191,7 +248,9 @@
         }
     }
 
-    // Функция отправки транзакции
+    // ============================================================
+    // Отправка транзакции
+    // ============================================================
     async function sendTransaction() {
         const wallet = tonConnectUI.wallet;
         if (!wallet) {
@@ -206,25 +265,24 @@
             txStatus.innerText = 'Подготовка транзакции...';
             txStatus.className = 'tx-status';
 
-            // Строим транзакцию на 0.01 TON = 10_000_000 наноТОН
+            const amountInTon = (parseInt(selectedAmount) / 1e9).toFixed(4);
+
             const tx = {
-                validUntil: Math.floor(Date.now() / 1000) + 300, // 5 минут
+                validUntil: Math.floor(Date.now() / 1000) + 300,
                 messages: [
                     {
                         address: RECIPIENT_ADDRESS,
-                        amount: '10000000', // 0.01 TON в наноТОНах
-                        payload: '' // можно оставить пустым
+                        amount: selectedAmount,
+                        payload: ''
                     }
                 ]
             };
 
             const result = await tonConnectUI.sendTransaction(tx);
 
-            // Если транзакция успешно отправлена (получаем boc или хеш)
             if (result) {
-                txStatus.innerText = `✅ Транзакция отправлена! Хеш: ${result.boc || 'успешно'}`;
+                txStatus.innerText = `✅ Отправлено ${amountInTon} TON! Хеш: ${result.boc || 'успешно'}`;
                 txStatus.className = 'tx-status success';
-                // Обновляем баланс через пару секунд после отправки
                 setTimeout(() => {
                     const address = wallet.account.address;
                     fetchWalletBalance(address);
@@ -236,18 +294,19 @@
             txStatus.className = 'tx-status error';
         } finally {
             sendBtn.disabled = false;
-            sendBtn.innerText = 'Отправить 0.01 TON (тест)';
+            sendBtn.innerText = 'Отправить';
         }
     }
 
-    // Подписка на изменение статуса авторизации кошелька
+    // ============================================================
+    // Статус подключения кошелька
+    // ============================================================
     tonConnectUI.onStatusChange(async wallet => {
         if (wallet) {
             const address = wallet.account.address;
             walletAddressContainer.innerText = address;
             walletInfoContainer.classList.add('active');
 
-            // Получаем баланс и активируем кнопку отправки
             await fetchWalletBalance(address);
             sendBtn.disabled = false;
             txStatus.innerText = '';
@@ -257,13 +316,12 @@
             walletBalanceContainer.innerText = 'Загрузка...';
             walletInfoContainer.classList.remove('active');
             sendBtn.disabled = true;
-            sendBtn.innerText = 'Отправить 0.01 TON (тест)';
+            sendBtn.innerText = 'Отправить';
             txStatus.innerText = '';
             txStatus.className = 'tx-status';
         }
     });
 
-    // Назначение обработчика на кнопку отправки
     sendBtn.addEventListener('click', sendTransaction);
 </script>
 
