@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TON Connect</title>
+    <title>TON Payment Scanner</title>
     <!-- Официальная библиотека TON Connect UI -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
@@ -120,10 +120,10 @@
 <body>
 
 <div class="card">
-    <!-- Изначально отображается только кнопка подключения -->
+    <!-- Кнопка подключения кошелька -->
     <div id="ton-connect"></div>
 
-    <!-- Блок появится только после подключения кошелька -->
+    <!-- Блок деталей, который появляется после подключения -->
     <div id="wallet-info" class="wallet-details">
         <div class="info-title">Адрес кошелька:</div>
         <div id="wallet-address" class="info-value"></div>
@@ -138,9 +138,9 @@
 </div>
 
 <script>
-    // Инициализация TON Connect UI
+    // Инициализация TON Connect UI с вашим манифестом
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://raw.githubusercontent.com/ton-community/tutorials/main/03-client/test-manifest.json',
+        manifestUrl: 'https://chek-topaz.vercel.app/tonconnect-manifest.json',
         buttonRootId: 'ton-connect'
     });
 
